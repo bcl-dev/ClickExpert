@@ -517,10 +517,10 @@ function start()
 end
 
 function stop()
+    debug("Stop script. " & timenow(), "stop")
+    
     isRan = !isRan
     threadclose(threadId)
-    
-    debug("Stop script. " & timenow(), "stop")
 end
 
 function debug(obj, fn)
