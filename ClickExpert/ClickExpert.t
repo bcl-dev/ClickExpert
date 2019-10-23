@@ -1,4 +1,4 @@
-﻿var debug = true
+﻿var debug = false
 var isRan = false
 var isDriveKM = false // 是否开启超级键鼠
 var expertModeChecked = false
@@ -17,11 +17,14 @@ end
 //======================================== 简单模式 ========================================
 
 function easyMode()
-    debug("EasyMode is running...", "expertMode")
+    debug("EasyMode is running...", "easyMode")
     
+    debug("get params", "easyMode")
     var param = combogetcursel("MouseSelectType")
     var delay = editgettext("MouseClickDelay")
+    debug("params ---> MouseSelectType: " & param & ", MouseClickDelay: " & delay, "easyMode")
     
+    debug("start loop", "easyMode")
     while(true)
         select(param)
             // 左键
@@ -43,6 +46,7 @@ function easyMode()
             mouseRightClick()
             
             default
+            debug("mouse click command has error, execute default command: mouseLeftClick()", "easyMode.select.default")
             mouseLeftClick()
         end
         sleep(delay)
@@ -53,8 +57,12 @@ end
 
 function expertMode()
     debug("ExpertMode is running...", "expertMode")
-    var loop = checkgetstate("Expert_LoopCheckBox")
     
+    debug("get params", "expertMode")
+    var loop = checkgetstate("Expert_LoopCheckBox")
+    debug("params ---> Expert_LoopCheckBox: " & loop, "expertMode")
+    
+    debug("start loop", "expertMode")
     while(true)
         
         for(var i = 0; i < arraysize(cmdArr); i++)
@@ -63,9 +71,11 @@ function expertMode()
         end
         
         if(!loop)
+            debug("exit loop", "expertMode")
             break
         end
     end
+    
     debug("ExpertMode stopped...", "expertMode")
     stop()
 end
@@ -80,12 +90,13 @@ function saveCommand()
         cmdArr[i] = listgettext("Expert_CommandList", i)
     end
     
-    debug(arraytostring(cmdArr), "saveCommand11")
+    debug(arraytostring(cmdArr), "saveCommand")
 end
 
 // 转换命令
 // array(0 = "MOVE|1234|1234") => array(0 = "MOVE", 1 = array(0 = "1234", 1 = "1234"))
 function transformCommand(commandStr)
+    debug("Transforming command...", "transformCommand")
     var res = array(), params = array(), retArr
     
     // 如果是发送字符串命令时, 不进行分割操作, 避免将 value 分割的错误.
@@ -107,11 +118,15 @@ function transformCommand(commandStr)
     
     res["type"] = retArr[0]
     res["params"] = params
+    
+    debug("result ---> " & arraytostring(res), "transformCommand")
     return res
 end
 
 // 分发命令
 function distributeCommand(commandType, paramArr)
+    debug("Distributing command...", "distributeCommand")
+    
     select(commandType)
         case "KEY"
         executeKeyCommand(paramArr[0], paramArr[1])
@@ -129,11 +144,15 @@ function distributeCommand(commandType, paramArr)
         executeDelayCommand(paramArr[0])
         
         default
-        traceprint("default")
+        debug("distributed command has error, exit script...", "distributeCommand.select.default")
+        stop()
     end
 end
 
 function executeKeyCommand(type, code)
+    debug("Executing key command...", "executeKeyCommand")
+    debug("params ---> " & type & ", " & code, "executeKeyCommand")
+    
     select(type)
         case 0
         keyPress(code)
@@ -145,15 +164,22 @@ function executeKeyCommand(type, code)
         keyUp(code)
         
         default
-        keyPress(code)
+        debug("executed key command has error, exit script...", "executeKeyCommand.select.default")
+        stop()
     end
 end
 
 function executeMoveCommand(x, y)
+    debug("Executing mouse move command...", "executeMoveCommand")
+    debug("params ---> " & x & ", " & y, "executeMoveCommand")
+    
     mouseMove(x, y)
 end
 
 function executeMouseCommand(type, code)
+    debug("Executing mouse click command...", "executeMouseCommand")
+    debug("params ---> " & type & ", " & code, "executeMouseCommand")
+    
     if(type == 0 && code == 0) // 点击左键
         mouseLeftClick()
     elseif(type == 0 && code == 1) // 点击右键
@@ -178,10 +204,16 @@ function executeMouseCommand(type, code)
 end
 
 function executeStrCommand(str)
+    debug("Executing send string command...", "executeStrCommand")
+    debug("params ---> " & str, "executeStrCommand")
+    
     keySendStr(str)
 end
 
 function executeDelayCommand(ms)
+    debug("Executing delay command...", "executeDelayCommand")
+    debug("params ---> " & ms, "executeDelayCommand")
+    
     sleep(ms)
 end
 
@@ -319,6 +351,10 @@ end
 function Expert_CommandList_左键双击()
     var index = listgetcursel("Expert_CommandList")
     listdeletetext("Expert_CommandList", index)
+end
+
+function DebugCheckBox_点击()
+    debug = !debug
 end
 
 // 保存设置
@@ -475,16 +511,21 @@ function start()
     if(!isRan)
         isRan = !isRan
         threadId = threadbegin("main", "")
+        
+        debug("Start script. " & timenow(), "main")
     end
 end
 
 function stop()
     isRan = !isRan
     threadclose(threadId)
+    
+    debug("Stop script. " & timenow(), "stop")
 end
 
 function debug(obj, fn)
     if(debug)
         traceprint("fn: " & fn & " => " & obj)
+        filelog("fn: " & fn & " => " & obj, "./debug.log")
     end
 end
