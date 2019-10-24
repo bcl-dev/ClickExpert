@@ -14,7 +14,7 @@
 
 ### 下载
 
-[Releases]( https://github.com/goclon/ClickExpert/releases )
+[Releases](https://github.com/goclon/ClickExpert/releases/latest)
 
 
 

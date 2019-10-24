@@ -1,6 +1,6 @@
 ﻿var debug = false
 var isRan = false
-var isDriveKM = false // 是否开启超级键鼠
+var isDriveKM = false
 var expertModeChecked = false
 
 var threadId
@@ -35,21 +35,21 @@ function easyMode()
             case 1
             mouseRightClick()
             
-            // 中间
+            // 中键
             case 2
             mouseMiddleClick()
             
             // 左右交替
             case 3
             mouseLeftClick()
-            sleep(delay)
+            delay(delay)
             mouseRightClick()
             
             default
             debug("mouse click command has error, execute default command: mouseLeftClick()", "easyMode.select.default")
             mouseLeftClick()
         end
-        sleep(delay)
+        delay(delay)
     end
 end
 
@@ -214,7 +214,7 @@ function executeDelayCommand(ms)
     debug("Executing delay command...", "executeDelayCommand")
     debug("params ---> " & ms, "executeDelayCommand")
     
-    sleep(ms)
+    delay(ms)
 end
 
 //======================================== UI 更新 ========================================
@@ -266,30 +266,33 @@ function Expert_AddKeyCommandButton_点击()
     var keyAction = combogetcursel("Expert_KeyAction")
     var keyCode = editgettext("Expert_KeyCode")
     
-    listaddtext("Expert_CommandList", "KEY|" & keyAction & "|" & keyCode)
+    addKeyCommandToList(keyAction, keyCode)
 end
 
 function Expert_AddMoveCommandButton_点击()
     var x = editgettext("Expert_MoveX")
     var y = editgettext("Expert_MoveY")
     
-    listaddtext("Expert_CommandList", "MOVE|" & x & "|" & y)
+    addMouseMoveCommandToList(x, y)
 end
 
 function Expert_AddMouseCommandButton_点击()
     var mouseAction = combogetcursel("Expert_MouseAction")
     var mouseCode = combogetcursel("Expert_MouseCode")
-    listaddtext("Expert_CommandList", "MOUSE|" & mouseAction & "|" & mouseCode)
+    
+    addMouseClickCommandToList(mouseAction, mouseCode)
 end
 
 function Expert_AddSendStrCommandButton_点击()
     var str = editgettext("Expert_Str")
-    listaddtext("Expert_CommandList", "STR|" & str)
+    
+    addSendStrCommandToList(str)
 end
 
 function Expert_AddDelayCommandButton_点击()
-    var str = editgettext("Expert_Delay")
-    listaddtext("Expert_CommandList", "DELAY|" & str)
+    var ms = editgettext("Expert_Delay")
+    
+    addDelayCommandToList(ms)
 end
 
 function Expert_ImportCommandListButton_点击()
@@ -345,7 +348,7 @@ function Expert_ExportCommandListButton_点击()
 end
 
 function Expert_ClearCommandListButton_点击()
-    listdeleteall("Expert_CommandList")
+    clearCommandList()
 end
 
 function Expert_CommandList_左键双击()
@@ -355,6 +358,11 @@ end
 
 function DebugCheckBox_点击()
     debug = !debug
+end
+
+
+function WebSite_点击()
+    cmd("https://github.com/goclon/ClickExpert", false)
 end
 
 // 保存设置
@@ -382,11 +390,8 @@ function StopHotKey_热键()
     stop()
 end
 
-function WebSite_点击()
-    cmd("https://github.com/goclon/ClickExpert", false)
-end
-
 //======================================== 键盘代理 ========================================
+
 function keyPress(code, num = 1)
     if(isDriveKM)
         drivekeypress(code, num)
@@ -505,6 +510,129 @@ function mouseMiddleUp()
     end
 end
 
+//======================================== 其他代理 ========================================
+
+function addKeyCommandToList(action, code)
+    listaddtext("Expert_CommandList", "KEY|" & action & "|" & code)
+end
+
+function addMouseMoveCommandToList(x, y)
+    listaddtext("Expert_CommandList", "MOVE|" & x & "|" & y)
+end
+
+function addMouseClickCommandToList(action, code)
+    listaddtext("Expert_CommandList", "MOUSE|" & action & "|" & code)
+end
+
+function addSendStrCommandToList(str)
+    listaddtext("Expert_CommandList", "STR|" & str)
+end
+
+function addDelayCommandToList(ms)
+    listaddtext("Expert_CommandList", "DELAY|" & ms)
+end
+
+function clearCommandList()
+    listdeleteall("Expert_CommandList")
+end
+
+function delay(ms)
+    if(isDriveKM)
+        sleep(ms)
+    else
+        sleep(ms)
+    end
+end
+
+//======================================== Hook ========================================
+
+var mouseHook, keyHook
+var mouseHookAddr, keyHookAddr
+var hmod
+
+var intervalTime = 50, lastTime = 0
+
+function startRecord()
+    debug("Start record...", "startRecord")
+    
+    lastTime = gettickcount()
+    
+    hmod = dllcall("kernel32.dll", "long", "GetModuleHandleA", "long", 0)
+    
+    // 鼠标钩子回调函数
+    mouseHookAddr = callbackmalloc("mouseHookProc", "hookproc")
+    // 注册鼠标全局钩子
+    mouseHook = dllcall("user32.dll", "long", "SetWindowsHookExA", "long", 14, "callback", mouseHookAddr, "long", hmod, "long", 0)
+    debug("mouse hook last error: " & getlasterror(1), "startRecord")
+    debug("mouseHook: " & mouseHook, "startRecord")
+    
+    
+    // 键盘钩子回调函数
+    keyHookAddr = callbackmalloc("keyHookProc", "hookproc")
+    // 注册键盘全局钩子
+    keyHook = dllcall("user32.dll", "long", "SetWindowsHookExA", "long", 13, "callback", keyHookAddr, "long", hmod, "long", 0)
+    debug("key hook last error: " & getlasterror(1), "startRecord")
+    debug("keyHook: " & keyHook, "startRecord")    
+end
+
+function stopRecord()
+    debug("Stop record...", "stopRecord")
+    
+    dllcall("user32.dll", "long", "UnhookWindowsHookExA", "long", mouseHook)
+    callbackfree(mouseHookAddr)
+end
+
+function mouseHookProc(code, wParam, lParam)
+    if(code < 0)
+        return  dllcall("user32.dll", "long", "CallNextHookEx", "long", mouseHook, "long", code, "long", wParam, "long", lParam)
+    end
+    var now = gettickcount(), diff = now - lastTime
+    // 控制录制间隔时间
+    if(diff < intervalTime)
+        return
+    end
+    
+    select(wParam)
+        case 512 // 0x0200, 移动
+        var x, y
+        mousegetpoint(x, y)
+        
+        addDelayCommandToList(diff)
+        addMouseMoveCommandToList(x, y)
+        lastTime = now
+        
+        case 513 // 0x0201, 按下左键
+        addDelayCommandToList(diff)
+        addMouseClickCommandToList(1, 0)
+        
+        case 514 // 0x0202, 弹起左键
+        addDelayCommandToList(diff)
+        addMouseClickCommandToList(2, 0)
+        
+        case 516 // 0x0204, 按下右键
+        addDelayCommandToList(diff)
+        addMouseClickCommandToList(1, 1)
+        
+        case 517 // 0x0205, 弹起右键
+        addDelayCommandToList(diff)
+        addMouseClickCommandToList(2, 1)
+        
+        default
+        // do nothing...
+    end
+end
+
+function keyHookProc(code, wParam, lParam)
+    if(code < 0)
+        return  dllcall("user32.dll", "long", "CallNextHookEx", "long", keyHook, "long", code, "long", wParam, "long", lParam)
+    end
+    
+    select(wParam)
+        default
+        // do nothing...
+    end
+end
+
 //======================================== 其他函数 ========================================
 
 function start()
@@ -528,4 +656,24 @@ function debug(obj, fn)
         traceprint("fn: " & fn & " => " & obj)
         filelog("fn: " & fn & " => " & obj, "./debug.log")
     end
+end
+
+
+function 按钮0_点击()
+    //这里添加你要执行的代码
+    startRecord()
+    
+end
+
+
+function 按钮1_点击()
+    //这里添加你要执行的代码
+    stopRecord()
+    
+end
+
+
+function ClickExpert_销毁()
+    //这里添加你要执行的代码
+    stopRecord()
 end
