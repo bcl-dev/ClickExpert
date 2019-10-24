@@ -628,6 +628,14 @@ function keyHookProc(code, wParam, lParam)
     end
     
     select(wParam)
+        case 256 // 0x0100, 按下
+        var keyCode = addressvalue(lParam, "long")
+        addKeyCommandToList(1, keyCode)
+        
+        case 257 // 0x0101, 弹起
+        var keyCode = addressvalue(lParam, "long")
+        addKeyCommandToList(2, keyCode)
+        
         default
         // do nothing...
     end
