@@ -246,6 +246,9 @@ function ExpertModeComponentStatusRefesh()
     controlenable("Expert_AddSendStrCommandButton", expertModeChecked)
     controlenable("Expert_AddDelayCommandButton", expertModeChecked)
     
+    // 录制按钮    
+    controlenable("Expert_StartRecordButton", expertModeChecked)
+    
     // 命令列表控件
     controlenable("Expert_ImportCommandListButton", expertModeChecked)
     controlenable("Expert_ExportCommandListButton", expertModeChecked)
@@ -293,6 +296,22 @@ function Expert_AddDelayCommandButton_点击()
     var ms = editgettext("Expert_Delay")
     
     addDelayCommandToList(ms)
+end
+
+function Expert_StartRecordButton_点击()
+    controlenable("ExpertModeCheckBox", false)
+    controlenable("Expert_StartRecordButton", false)
+    controlenable("Expert_StopRecordButton", true)
+    
+    startRecord()
+end
+
+function Expert_StopRecordButton_点击()
+    controlenable("ExpertModeCheckBox", true)
+    controlenable("Expert_StartRecordButton", true)
+    controlenable("Expert_StopRecordButton", false)
+    
+    stopRecord()
 end
 
 function Expert_ImportCommandListButton_点击()
@@ -378,6 +397,10 @@ function SaveSettings_点击()
     end
     
     messagebox("应用成功", "Info")
+end
+
+function ClickExpert_销毁()
+    stopRecord()
 end
 
 //======================================== 热键事件 ========================================
@@ -664,24 +687,4 @@ function debug(obj, fn)
         traceprint("fn: " & fn & " => " & obj)
         filelog("fn: " & fn & " => " & obj, "./debug.log")
     end
-end
-
-
-function 按钮0_点击()
-    //这里添加你要执行的代码
-    startRecord()
-    
-end
-
-
-function 按钮1_点击()
-    //这里添加你要执行的代码
-    stopRecord()
-    
-end
-
-
-function ClickExpert_销毁()
-    //这里添加你要执行的代码
-    stopRecord()
 end
