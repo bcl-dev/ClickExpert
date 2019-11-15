@@ -28,7 +28,7 @@
 
 ## Usage
 
-![snipaste_20191025_164205.jpg](https://i.loli.net/2019/10/25/djuveQit4kArWzq.jpg)
+![snipaste.jpg](https://i.loli.net/2019/11/15/N8TRmoV3nfja5sc.jpg)
 
 鼠标连点: 选择鼠标按键, 设置延迟. 启动后将连续执行点击.
 
