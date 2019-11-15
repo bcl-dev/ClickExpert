@@ -1,6 +1,7 @@
 ﻿var debug = false
-var isRan = false
+var isRunning = false
 var isDriveKM = false
+var isRecording = false
 var expertModeChecked = false
 
 var threadId
@@ -246,8 +247,9 @@ function ExpertModeComponentStatusRefesh()
     controlenable("Expert_AddSendStrCommandButton", expertModeChecked)
     controlenable("Expert_AddDelayCommandButton", expertModeChecked)
     
-    // 录制按钮    
-    controlenable("Expert_StartRecordButton", expertModeChecked)
+    // 录制热键    
+    controlenable("StartRecordHotKey", expertModeChecked)
+    controlenable("StopRecordHotKey", expertModeChecked)
     
     // 命令列表控件
     controlenable("Expert_ImportCommandListButton", expertModeChecked)
@@ -296,22 +298,6 @@ function Expert_AddDelayCommandButton_点击()
     var ms = editgettext("Expert_Delay")
     
     addDelayCommandToList(ms)
-end
-
-function Expert_StartRecordButton_点击()
-    controlenable("ExpertModeCheckBox", false)
-    controlenable("Expert_StartRecordButton", false)
-    controlenable("Expert_StopRecordButton", true)
-    
-    startRecord()
-end
-
-function Expert_StopRecordButton_点击()
-    controlenable("ExpertModeCheckBox", true)
-    controlenable("Expert_StartRecordButton", true)
-    controlenable("Expert_StopRecordButton", false)
-    
-    stopRecord()
 end
 
 function Expert_ImportCommandListButton_点击()
@@ -386,11 +372,7 @@ end
 
 // 保存设置
 function SaveSettings_点击()
-    hotkeydestroy("StartHotKey")
-    hotkeyregister("StartHotKey")
-    
-    hotkeydestroy("StopHotKey")
-    hotkeyregister("StopHotKey")
+    applyHotKeySettings()
     
     if(expertModeChecked)
         saveCommand()
@@ -399,11 +381,33 @@ function SaveSettings_点击()
     messagebox("应用成功", "Info")
 end
 
+function applyHotKeySettings()
+    hotkeydestroy("StartRecordHotKey")
+    hotkeyregister("StartRecordHotKey")
+    
+    hotkeydestroy("StopRecordHotKey")
+    hotkeyregister("StopRecordHotKey")
+    
+    hotkeydestroy("StopHotKey")
+    hotkeyregister("StopHotKey")
+    
+    hotkeydestroy("StopHotKey")
+    hotkeyregister("StopHotKey")
+end
+
 function ClickExpert_销毁()
     stopRecord()
 end
 
 //======================================== 热键事件 ========================================
+
+function StartRecordHotKey_热键()
+    startRecord()
+end
+
+function StopRecordHotKey_热键()
+    stopRecord()
+end
 
 function StartHotKey_热键()
     start()
@@ -576,7 +580,11 @@ var hmod
 var intervalTime = 50, lastTime = 0
 
 function startRecord()
+    if(!(expertModeChecked && !isRecording && !isRunning))
+        return
+    end
     debug("Start record...", "startRecord")
+    isRecording = true
     
     lastTime = gettickcount()
     
@@ -599,10 +607,17 @@ function startRecord()
 end
 
 function stopRecord()
+    if(!(expertModeChecked && isRecording && !isRunning))
+        return
+    end
     debug("Stop record...", "stopRecord")
+    isRecording = false
     
     dllcall("user32.dll", "long", "UnhookWindowsHookExA", "long", mouseHook)
     callbackfree(mouseHookAddr)
+    
+    dllcall("user32.dll", "long", "UnhookWindowsHookExA", "long", keyHook)
+    callbackfree(keyHookAddr)
 end
 
 function mouseHookProc(code, wParam, lParam)
@@ -650,13 +665,20 @@ function keyHookProc(code, wParam, lParam)
         return  dllcall("user32.dll", "long", "CallNextHookEx", "long", keyHook, "long", code, "long", wParam, "long", lParam)
     end
     
+    var keyCode = addressvalue(lParam, "long")
+    
+    var startKey, stopKey, retmod
+    hotkeyget("StartRecordHotKey", startKey, retmod)
+    hotkeyget("StopRecordHotKey", stopKey, retmod)
+    if(keyCode == startKey || keyCode == stopKey)
+        return
+    end
+    
     select(wParam)
         case 256 // 0x0100, 按下
-        var keyCode = addressvalue(lParam, "long")
         addKeyCommandToList(1, keyCode)
         
         case 257 // 0x0101, 弹起
-        var keyCode = addressvalue(lParam, "long")
         addKeyCommandToList(2, keyCode)
         
         default
@@ -667,18 +689,20 @@ end
 //======================================== 其他函数 ========================================
 
 function start()
-    if(!isRan)
-        isRan = !isRan
-        threadId = threadbegin("main", "")
-        
-        debug("Start script. " & timenow(), "main")
+    if(isRunning || isRecording)
+        return
     end
+    isRunning = true
+    threadId = threadbegin("main", "")
+    
+    debug("Start script. " & timenow(), "main")
+    
 end
 
 function stop()
     debug("Stop script. " & timenow(), "stop")
     
-    isRan = !isRan
+    isRunning = false
     threadclose(threadId)
 end
 
