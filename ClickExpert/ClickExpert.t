@@ -112,9 +112,7 @@ function transformCommand(commandStr)
     strsplit(commandStr, "|", retArr)
     
     for(var i = 0; i < arraysize(retArr); i++)
-        if(i > 0)
-            params[i - 1] = retArr[i]
-        end
+        params[i] = retArr[i + 1]
     end
     
     res["type"] = retArr[0]
@@ -327,7 +325,7 @@ function Expert_ImportCommandListButton_点击()
 end
 
 function Expert_ExportCommandListButton_点击()
-    var  count = listgetcount("Expert_CommandList")
+    var count = listgetcount("Expert_CommandList")
     if(count < 1)
         messagebox("命令列表为空", "Error")
         return
@@ -564,11 +562,7 @@ function clearCommandList()
 end
 
 function delay(ms)
-    if(isDriveKM)
-        sleep(ms)
-    else
-        sleep(ms)
-    end
+    sleep(ms)
 end
 
 //======================================== Hook ========================================
@@ -707,8 +701,9 @@ function stop()
 end
 
 function debug(obj, fn)
-    if(debug)
-        traceprint("fn: " & fn & " => " & obj)
-        filelog("fn: " & fn & " => " & obj, "./debug.log")
+    if(!debug)
+        return
     end
+    traceprint("fn: " & fn & " => " & obj)
+    filelog("fn: " & fn & " => " & obj, "./debug.log")
 end
